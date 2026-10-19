@@ -72,7 +72,7 @@ export function validateProject(project) {
 }
 
 const IDENT = '[a-zA-Z_$][\\w.$]*';
-const VALUE = '(?:true|false|null|-?\\d+(?:\\.\\d+)?|"(?:[^"\\\\]|\\\\.)*"|\\'(?:[^\\'\\\\]|\\\\.)*\\')';
+const VALUE = '(?:true|false|null|-?\\d+(?:\\.\\d+)?|"(?:[^"\\\\]|\\.)*"|\\'(?:[^\\'\\\\]|\\.)*\\')';
 export function isSupportedExpression(expression, assignment = false) {
   const s = String(expression || '').trim();
   if (!s) return true;
@@ -87,7 +87,7 @@ function parseValue(raw) {
   if (s === 'null') return null;
   if (/^-?\\d+(?:\\.\\d+)?$/.test(s)) return Number(s);
   if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    try { return s[0] === '"' ? JSON.parse(s) : s.slice(1, -1).replace(/\\\\'/g, "'").replace(/\\\\\\\\/g, '\\\\'); } catch { return s.slice(1, -1); }
+    try { return s[0] === '"' ? JSON.parse(s) : s.slice(1, -1).replace(/\\'/g, "'").replace(/\\\\\\\\/g, '\\'); } catch { return s.slice(1, -1); }
   }
   return s;
 }
@@ -104,7 +104,7 @@ export function evaluateCondition(expression, state, rng = Math.random) {
   if (m) return rng() * 100 < Math.max(0, Math.min(100, Number(m[1])));
   m = s.match(/^skill\\(([^)]+)\\)\\s*(>=|<=|==|!=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)$/);
   if (m) return compare(state.skills[m[1].trim()] ?? 0, m[2], Number(m[3]));
-  m = s.match(/^('(?:[^'\\\\]|\\\\.)*'|"(?:[^"\\\\]|\\\\.)*"|-?\\d+(?:\\.\\d+)?|true|false|null)\\s*(==|!=|>=|<=|>|<)\\s*(.+)$/);
+  m = s.match(/^('(?:[^'\\\\]|\\.)*'|"(?:[^"\\\\]|\\.)*"|-?\\d+(?:\\.\\d+)?|true|false|null)\\s*(==|!=|>=|<=|>|<)\\s*(.+)$/);
   if (m) return compare(parseValue(m[1]), m[2], readPath(m[3].trim(), state));
   m = s.match(/^([\\w.$]+)\\s*(==|!=|>=|<=|>|<)\\s*(.+)$/);
   if (m) return compare(readPath(m[1], state), m[2], parseValue(m[3]));
