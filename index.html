@@ -72,26 +72,31 @@ function findRuntimePath(start,end){const step=.2,limit=5000,obstacles=runtimeOb
 function setRuntimeDestination(point){if(!runtimePlayer||$('#overlay').classList.contains('dialog-active'))return;if(!walkableAt(point.x,point.z)){$('#hint').textContent='Нельзя идти по пустому пространству — выберите поверхность';runtimePath=[];runtimePathIndex=0;return}const target=point.clone();target.y=floorHeightAt(target.x,target.z);runtimePath=findRuntimePath(runtimePlayer.position,target);runtimePathIndex=0;if(!runtimePath.length&&runtimePlayer.position.distanceTo(target)>.6)$('#hint').textContent='Path blocked · choose another point'}
 function makeSilhouetteOutline(source,color){
  const outline=new THREE.Group();outline.name='Interactive silhouette outline';outline.userData.editorGizmo=true;
+ // Share one shader material across every mesh in this outline; imported models can contain hundreds of meshes.
+ const material=new THREE.ShaderMaterial({
+  uniforms:{outlineColor:{value:new THREE.Color(color)},outlineOpacity:{value:.95},outlineThickness:{value:.035}},
+  vertexShader:`uniform float outlineThickness; void main(){vec3 n=length(normal)>0.0001?normalize(normal):vec3(0.0,1.0,0.0);vec3 expanded=position+n*outlineThickness;gl_Position=projectionMatrix*modelViewMatrix*vec4(expanded,1.0);}`,
+  fragmentShader:`uniform vec3 outlineColor; uniform float outlineOpacity; void main(){gl_FragColor=vec4(outlineColor,outlineOpacity);}`,
+  side:THREE.BackSide,transparent:true,depthTest:true,depthWrite:false,toneMapped:false
+ });
+ let shellCount=0;
  const makeShell=(mesh,parent,isRoot=false)=>{
-  if(!mesh.geometry)return;
-  const material=new THREE.ShaderMaterial({
-   uniforms:{outlineColor:{value:new THREE.Color(color)},outlineOpacity:{value:.95},outlineThickness:{value:.035}},
-   vertexShader:`uniform float outlineThickness; void main(){vec3 expanded=position+normalize(normal)*outlineThickness; gl_Position=projectionMatrix*modelViewMatrix*vec4(expanded,1.0);}`,
-   fragmentShader:`uniform vec3 outlineColor; uniform float outlineOpacity; void main(){gl_FragColor=vec4(outlineColor,outlineOpacity);}`,
-   side:THREE.BackSide,transparent:true,depthTest:true,depthWrite:false,toneMapped:false
-  });
+  if(!mesh.geometry||!mesh.geometry.attributes?.position)return;
   const shell=new THREE.Mesh(mesh.geometry,material);
   if(isRoot){shell.position.set(0,0,0);shell.quaternion.identity();shell.scale.set(1,1,1)}
   else{shell.position.copy(mesh.position);shell.quaternion.copy(mesh.quaternion);shell.scale.copy(mesh.scale)}
-  shell.renderOrder=999;shell.userData.editorGizmo=true;parent.add(shell)
+  shell.renderOrder=999;shell.userData.editorGizmo=true;shell.frustumCulled=true;parent.add(shell);shellCount++
  };
  const walk=(src,dst)=>src.children.forEach(child=>{
+  if(child.userData?.editorGizmo)return;
   if(child.isMesh&&child.geometry)makeShell(child,dst);
-  else if(child.children.length){const group=new THREE.Group();group.position.copy(child.position);group.quaternion.copy(child.quaternion);group.scale.copy(child.scale);dst.add(group);walk(child,group)}
+  if(child.children?.length){const group=new THREE.Group();group.position.copy(child.position);group.quaternion.copy(child.quaternion);group.scale.copy(child.scale);dst.add(group);walk(child,group)}
  });
  if(source.isMesh&&source.geometry)makeShell(source,outline,true);
  walk(source,outline);
+ if(!shellCount){material.dispose();return outline}
  outline.position.copy(source.position);outline.quaternion.copy(source.quaternion);outline.scale.copy(source.scale);
+ outline.userData.disposeOutline=()=>material.dispose();
  return outline
 }
 function syncGlowLights(){
@@ -103,8 +108,20 @@ function syncGlowLights(){
   light.name='Material glow light';light.position.set(0,0,0);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.radius=m.shadowSoftness??3;light.shadow.bias=-0.00015;light.shadow.normalBias=0.025;light.userData.editorGizmo=true;o.add(light);o.userData.glowLight=light;
  })
 }
-function startPlay(){S.play=true;grid.visible=false;runtimePath=[];runtimePathIndex=0;runtimeWidgetHighlights.forEach(h=>scene.remove(h.helper));runtimeWidgetHighlights=[];S.widgets.forEach(w=>{const o=root.children.find(x=>x.userData?.id===w.objectId);if(o){const helper=makeSilhouetteOutline(o,w.color||'#f2a65a');helper.visible=true;scene.add(helper);runtimeWidgetHighlights.push({widget:w,object:o,helper})}});controls.enabled=false;transform.detach();if(runtimePlayer)scene.remove(runtimePlayer);const playerSource=root.children.find(o=>o.userData?.role==='player');runtimePlayer=makeRuntimeActor('player',playerSource||{position:new THREE.Vector3(0,0,0)});runtimeNPCs=[];root.children.forEach(o=>{if(o.userData?.role==='npc'||(!o.userData?.role&&o.userData?.type==='Capsule'))runtimeNPCs.push({source:o,visual:makeRuntimeActor('npc',o),dialogueId:o.userData.dialogueId||'start'});if(o.userData?.role==='player'||o.userData?.role==='npc')o.visible=false});hideTalkWidget();pendingTalk=null;pendingWidget=null;$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active');$('#dialogBox').innerHTML='';$('#hud').classList.remove('hidden');$('#tools').classList.add('hidden');$('#playBtn').classList.add('hidden');$('#stopBtn').disabled=false;$('#readyLabel').textContent='● Play mode · WASD + click';renderer.domElement.style.cursor='crosshair'}
-function stopPlay(){S.play=false;grid.visible=S.grid;$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active');$('#dialogBox').innerHTML='';$('#playBtn').classList.remove('hidden');$('#stopBtn').disabled=true;$('#readyLabel').textContent='● Editor ready';$('#tools').classList.remove('hidden');$('#hud').classList.remove('hidden');controls.enabled=true;root.children.forEach(o=>o.visible=true);runtimePath=[];if(runtimePlayer){scene.remove(runtimePlayer);runtimePlayer=null}runtimeNPCs.forEach(n=>scene.remove(n.visual));runtimeNPCs=[];runtimeWidgetHighlights.forEach(h=>scene.remove(h.helper));runtimeWidgetHighlights=[];renderer.domElement.style.cursor='';hideTalkWidget();hideInteractionWidget();pendingTalk=null;pendingWidget=null;setMode('level')}
+function startPlay(){
+ if(S.play)return;
+ runtimePath=[];runtimePathIndex=0;
+ runtimeWidgetHighlights.forEach(h=>{scene.remove(h.helper);h.helper.userData?.disposeOutline?.()});runtimeWidgetHighlights=[];
+ // Outline generation is best-effort: one malformed/unsupported imported mesh must never abort Play mode.
+ S.widgets.forEach(w=>{try{const o=root.children.find(x=>x.userData?.id===w.objectId);if(!o)return;const helper=makeSilhouetteOutline(o,w.color||'#f2a65a');if(!helper.children.length)return;helper.visible=true;scene.add(helper);runtimeWidgetHighlights.push({widget:w,object:o,helper})}catch(err){console.warn('Interactive outline skipped for '+(w.name||w.id),err)}});
+ try{
+  controls.enabled=false;transform.detach();if(runtimePlayer)scene.remove(runtimePlayer);
+  const playerSource=root.children.find(o=>o.userData?.role==='player');runtimePlayer=makeRuntimeActor('player',playerSource||{position:new THREE.Vector3(0,0,0)});
+  runtimeNPCs=[];root.children.forEach(o=>{if(o.userData?.role==='npc'||(!o.userData?.role&&o.userData?.type==='Capsule'))runtimeNPCs.push({source:o,visual:makeRuntimeActor('npc',o),dialogueId:o.userData.dialogueId||'start'});if(o.userData?.role==='player'||o.userData?.role==='npc')o.visible=false});
+  S.play=true;grid.visible=false;hideTalkWidget();hideInteractionWidget();pendingTalk=null;pendingWidget=null;$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active');$('#dialogBox').innerHTML='';$('#hud').classList.remove('hidden');$('#tools').classList.add('hidden');$('#playBtn').classList.add('hidden');$('#stopBtn').disabled=false;$('#readyLabel').textContent='● Play mode · WASD + click';renderer.domElement.style.cursor='crosshair';
+ }catch(err){console.error('Play mode failed to start',err);stopPlay();status('Play mode error: '+(err?.message||err));alert('Не удалось запустить режим игры: '+(err?.message||err)+'\\nПроверьте консоль браузера для подробностей.')}
+}
+function stopPlay(){S.play=false;grid.visible=S.grid;$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active');$('#dialogBox').innerHTML='';$('#playBtn').classList.remove('hidden');$('#stopBtn').disabled=true;$('#readyLabel').textContent='● Editor ready';$('#tools').classList.remove('hidden');$('#hud').classList.remove('hidden');controls.enabled=true;root.children.forEach(o=>o.visible=true);runtimePath=[];if(runtimePlayer){scene.remove(runtimePlayer);runtimePlayer=null}runtimeNPCs.forEach(n=>scene.remove(n.visual));runtimeNPCs=[];runtimeWidgetHighlights.forEach(h=>{scene.remove(h.helper);h.helper.userData?.disposeOutline?.()});runtimeWidgetHighlights=[];renderer.domElement.style.cursor='';hideTalkWidget();hideInteractionWidget();pendingTalk=null;pendingWidget=null;setMode('level')}
 function runDialog(id){runtimePath=[];runtimePathIndex=0;for(const k of ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys[k]=false;const d=S.dialogs.find(x=>x.id===id);if(!d){alert('Missing dialogue node '+id);return}const b=$('#dialogBox');$('#overlay').classList.remove('hidden');$('#overlay').classList.add('dialog-active');b.innerHTML='<div class="speaker">'+esc(d.type==='end'?'END':d.speaker||'UNKNOWN')+'</div><div class="dialogtext">'+esc(d.text||'')+'</div><div id="opts"></div><button id="leave" style="margin-top:10px">Leave conversation</button>';const opts=$('#opts');(d.choices||[]).filter(c=>condition(c.condition)).forEach(c=>{const btn=document.createElement('button');btn.className='choice';btn.textContent=c.text;btn.onclick=()=>{effect(c.effect);runDialog(c.to)};opts.appendChild(btn)});if(d.type==='end'||!d.choices.length){const btn=document.createElement('button');btn.className='choice';btn.textContent='Return to world';btn.onclick=()=>{b.innerHTML='<div class="speaker">FIELD TEST</div><h2>Conversation complete</h2><p class="muted">Flags: '+esc(JSON.stringify(S.flags))+'</p><button id="backWorld" class="primary">Continue</button>';$('#backWorld').onclick=()=>{b.innerHTML='';$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active')}};opts.appendChild(btn)}$('#leave').onclick=()=>{b.innerHTML='<div class="speaker">FIELD TEST</div><h2>Conversation paused</h2><button id="resume">Return to world</button> <button id="exit">Back to editor</button>';$('#resume').onclick=()=>{b.innerHTML='';$('#overlay').classList.add('hidden');$('#overlay').classList.remove('dialog-active')};$('#exit').onclick=stopPlay}}
 function condition(s){if(!s)return true;const m=s.match(/^([\w.]+)\s*==\s*(true|false|\d+|"[^"]*"|'[^']*')$/);if(!m)return !!S.flags[s];let v=m[2];if(v==='true')v=true;else if(v==='false')v=false;else if(/^\d+$/.test(v))v=+v;else v=v.slice(1,-1);return S.flags[m[1]]===v}
 function effect(s){const m=(s||'').match(/^([\w.]+)\s*=\s*(true|false|\d+|"[^"]*"|'[^']*')$/);if(!m)return;let v=m[2];if(v==='true')v=true;else if(v==='false')v=false;else if(/^\d+$/.test(v))v=+v;else v=v.slice(1,-1);S.flags[m[1]]=v}
