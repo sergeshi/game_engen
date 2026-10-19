@@ -111,7 +111,7 @@ function syncGlowLights(){
   if(!m?.illuminateScene)return;
   const range=Math.max(3,(m.haloSize||1.5)*12);
   const light=new THREE.PointLight(m.emissiveColor||'#ffffff',Math.max(0,m.emissiveStrength??1)*18,range,2);
-  light.name='Material illumination';light.position.set(0,0,0);light.visible=globalLighting.enabled;
+  light.name='Material illumination';o.updateWorldMatrix(true,true);const worldBounds=new THREE.Box3().setFromObject(o);const lightWorld=worldBounds.isEmpty()?o.getWorldPosition(new THREE.Vector3()):new THREE.Vector3((worldBounds.min.x+worldBounds.max.x)*.5,worldBounds.max.y+Math.max(.08,(worldBounds.max.y-worldBounds.min.y)*.03),(worldBounds.min.z+worldBounds.max.z)*.5);light.position.copy(o.worldToLocal(lightWorld));light.visible=globalLighting.enabled;
   light.userData.editorGizmo=true;light.userData.materialGlowLight=true;
   light.userData.materialShadowEnabled=globalLighting.shadows&&shadowSlots<2;
   light.castShadow=light.userData.materialShadowEnabled;
