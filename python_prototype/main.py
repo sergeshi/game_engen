@@ -17,6 +17,7 @@ from panda3d.core import (
 )
 from direct.gui.DirectGui import DirectButton, DirectFrame, DirectLabel
 from direct.showbase.ShowBase import ShowBase
+from engine.core import atomic_save, load_project, validate_project, apply_choice, UndoHistory
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_SCENE = APP_DIR / "scenes" / "sample_scene.json"
@@ -52,56 +53,6 @@ def default_project() -> dict[str, Any]:
     }
 
 
-def validate_project(data: Any) -> dict[str, Any]:
-    if not isinstance(data, dict) or not isinstance(data.get("objects"), list):
-        raise ValueError("Scene must be an object containing an 'objects' list.")
-    seen: set[str] = set()
-    for obj in data["objects"]:
-        if not isinstance(obj, dict) or not isinstance(obj.get("id"), str):
-            raise ValueError("Every scene object must have a string id.")
-        if obj["id"] in seen:
-            raise ValueError(f"Duplicate object id: {obj['id']}")
-        seen.add(obj["id"])
-        for field in ("position", "rotation", "scale", "color"):
-            values = obj.get(field)
-            if not isinstance(values, list) or len(values) != 3:
-                raise ValueError(f"Object {obj['id']} has invalid {field}.")
-            if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in values):
-                raise ValueError(f"Object {obj['id']} has non-numeric {field}.")
-        if any(abs(float(v)) < 0.0001 for v in obj["scale"]):
-            raise ValueError(f"Object {obj['id']} has a zero scale.")
-    data.setdefault("variables", {})
-    data.setdefault("journal", [])
-    data.setdefault("name", "Untitled Scene")
-    data.setdefault("version", 1)
-    data.setdefault("format", "game-engen-python-scene")
-    return data
-
-
-def atomic_save(path: str | Path, data: dict[str, Any]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(validate_project(json.loads(json.dumps(data))), indent=2, ensure_ascii=False)
-    fd, tmp_name = tempfile.mkstemp(prefix=target.name, suffix=".tmp", dir=str(target.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(tmp_name, target)
-    except Exception:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
-
-
-def load_project(path: str | Path) -> dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as stream:
-        return validate_project(json.load(stream))
-
-
 class EngineApp(ShowBase):
     def __init__(self, renderer: str = "opengl", scene_path: str | Path | None = None):
         self.renderer_name = renderer
@@ -120,8 +71,7 @@ class EngineApp(ShowBase):
         self.project = load_project(self.scene_path) if self.scene_path.exists() else default_project()
         self.selected_id: str | None = None
         self.nodes: dict[str, Any] = {}
-        self.undo_stack: list[dict[str, Any]] = []
-        self.redo_stack: list[dict[str, Any]] = []
+        self.history = UndoHistory(limit=100)
         self.play_mode = False
         self.dialogue_state: dict[str, Any] | None = None
         self.camera_heading = 0.0
@@ -330,16 +280,14 @@ class EngineApp(ShowBase):
         return json.loads(json.dumps(self.project))
 
     def _commit_edit(self):
-        self.undo_stack.append(self._snapshot())
-        self.undo_stack = self.undo_stack[-100:]
-        self.redo_stack.clear()
+        self.history.record(self.project)
 
     def transform(self, dx, dy, dz):
         obj = self._selected_object()
         if not obj or self.play_mode:
             return
         self._commit_edit()
-        amount = 0.5 if self.keyMap.get("shift", False) else 0.2
+        amount = 0.5 if self.mouseWatcherNode.isButtonDown("shift") else 0.2
         if self.move_mode == "move":
             for i, delta in enumerate((dx, dy, dz)):
                 obj["position"][i] += delta * amount
@@ -411,19 +359,19 @@ class EngineApp(ShowBase):
         self._set_status("Object deleted")
 
     def undo(self):
-        if not self.undo_stack:
+        restored = self.history.undo(self.project)
+        if restored is None:
             self._set_status("Nothing to undo"); return
-        self.redo_stack.append(self._snapshot())
-        self.project = self.undo_stack.pop()
+        self.project = restored
         self.selected_id = None
         self._rebuild_scene()
         self._set_status("Undo")
 
     def redo(self):
-        if not self.redo_stack:
+        restored = self.history.redo(self.project)
+        if restored is None:
             self._set_status("Nothing to redo"); return
-        self.undo_stack.append(self._snapshot())
-        self.project = self.redo_stack.pop()
+        self.project = restored
         self.selected_id = None
         self._rebuild_scene()
         self._set_status("Redo")
@@ -439,7 +387,7 @@ class EngineApp(ShowBase):
         try:
             self.project = load_project(self.scene_path)
             self.selected_id = None
-            self.undo_stack.clear(); self.redo_stack.clear()
+            self.history = UndoHistory(limit=100)
             self._rebuild_scene()
             self._set_status(f"Loaded {self.scene_path}")
         except Exception as exc:
@@ -499,12 +447,8 @@ class EngineApp(ShowBase):
         self._set_status("Dialogue — choose a response")
 
     def _choose_dialogue(self, choice):
-        for key, value in choice.get("effects", {}).items():
-            self.project.setdefault("variables", {})[key] = value
         node = self.dialogue_state["nodes"][self.dialogue_state["node"]]
-        if node.get("journal"):
-            self.project.setdefault("journal", []).append(node["journal"])
-        next_node = choice.get("next")
+        next_node = apply_choice(self.project, node, choice)
         if next_node and next_node in self.dialogue_state["nodes"]:
             self.dialogue_state["node"] = next_node
             self._show_dialogue_node()
