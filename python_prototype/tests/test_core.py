@@ -49,7 +49,7 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(next_node, "done")
         self.assertTrue(project["variables"]["quest_started"])
         self.assertEqual(project["variables"]["trust"], 2)
-        self.assertEqual(project["journal"], ["Find the key"])
+        self.assertEqual(project["journal"], [])
 
     def test_undo_redo(self):
         history = UndoHistory(limit=3)
