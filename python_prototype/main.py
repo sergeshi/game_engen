@@ -17,7 +17,10 @@ from panda3d.core import (
 )
 from direct.gui.DirectGui import DirectButton, DirectFrame, DirectLabel
 from direct.showbase.ShowBase import ShowBase
-from engine.core import atomic_save, load_project, validate_project, apply_choice, UndoHistory
+try:
+    from .engine.core import atomic_save, load_project, validate_project, apply_choice, UndoHistory
+except ImportError:  # Supports direct execution: python python_prototype/main.py
+    from engine.core import atomic_save, load_project, validate_project, apply_choice, UndoHistory
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_SCENE = APP_DIR / "scenes" / "sample_scene.json"
