@@ -4,14 +4,18 @@ on:
   push:
     paths:
       - "python_prototype/**"
+      - "desktop.py"
       - "main.py"
       - "requirements.txt"
+      - "RUN_GAME_ENGEN.bat"
       - ".github/workflows/python-prototype.yml"
   pull_request:
     paths:
       - "python_prototype/**"
+      - "desktop.py"
       - "main.py"
       - "requirements.txt"
+      - "RUN_GAME_ENGEN.bat"
       - ".github/workflows/python-prototype.yml"
 
 jobs:
@@ -23,6 +27,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile Python sources
-        run: python -m compileall -q main.py python_prototype
+        run: python -m compileall -q main.py desktop.py python_prototype
       - name: Test renderer-independent core
         run: python -m unittest discover -s python_prototype/tests -v
