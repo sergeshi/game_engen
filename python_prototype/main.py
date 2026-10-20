@@ -57,7 +57,7 @@ class EngineApp(ShowBase):
     def __init__(self, renderer: str = "opengl", scene_path: str | Path | None = None):
         self.renderer_name = renderer
         if renderer == "vulkan":
-            loadPrcFileData("game-engen", "load-display p3vk")
+            loadPrcFileData("game-engen", "load-display p3vulkandisplay")
         else:
             loadPrcFileData("game-engen", "load-display pandagl")
         loadPrcFileData("game-engen", "window-title GAME ENGEN — Python Prototype")
@@ -544,7 +544,7 @@ def main():
         app.run()
     except Exception as exc:
         if args.renderer == "vulkan":
-            print("Vulkan renderer could not start. This Panda3D build may not include the p3vk display plugin.", file=sys.stderr)
+            print("Vulkan renderer could not start. This Panda3D build may not include the p3vulkandisplay display plugin.", file=sys.stderr)
         print(f"GAME ENGEN startup failed: {exc}", file=sys.stderr)
         raise
 
