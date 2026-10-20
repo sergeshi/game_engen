@@ -99,4 +99,4 @@ python_prototype/
     test_runtime.py
 ```
 
-The current code intentionally implements only a small vertical slice. The Vulkan switch is a guarded attempt to load Panda3D's `p3vk` plugin; Vulkan is **not** considered validated until tested with a build that includes that plugin and a real GPU/driver. A production dual-backend renderer needs a dedicated backend implementation and parity tests.
+The current code intentionally implements only a small vertical slice. The Vulkan switch is a guarded attempt to load Panda3D's experimental `p3vulkandisplay` module; Vulkan is **not** considered validated until tested with a build that includes that module and a real GPU/driver, and the backend is not assumed to have OpenGL feature parity. A production dual-backend renderer needs a dedicated backend implementation and parity tests.
