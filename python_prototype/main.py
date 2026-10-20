@@ -74,6 +74,7 @@ class EngineApp(ShowBase):
         self.history = UndoHistory(limit=100)
         self.play_mode = False
         self.dialogue_state: dict[str, Any] | None = None
+        self.player_node = None
         self.camera_heading = 0.0
         self.camera_pitch = -22.0
         self.camera_distance = 21.0
@@ -396,13 +397,43 @@ class EngineApp(ShowBase):
     def toggle_play(self):
         self.play_mode = not self.play_mode
         self.selected_id = None if self.play_mode else self.selected_id
+        if self.play_mode:
+            self.player_node = self.render.attachNewNode("runtime-player")
+            self.player_node.setPos(0, -5, 0.55)
+            avatar = self.loader.loadModel("models/misc/rgbCube")
+            avatar.reparentTo(self.player_node)
+            avatar.setScale(0.35, 0.35, 0.55)
+            avatar.setColor(0.3, 0.9, 0.62, 1)
+            self._update_camera()
+            self._set_status("PLAY mode — WASD move, E interact")
+        else:
+            if self.player_node:
+                self.player_node.removeNode()
+                self.player_node = None
+            self._update_camera()
+            self._set_status("Editor mode")
         self._refresh_hierarchy()
-        self._set_status("PLAY mode — E near NPC to interact" if self.play_mode else "Editor mode")
+
+    def _player_blocked(self, pos):
+        radius = 0.35
+        for obj in self.project["objects"]:
+            if not obj.get("solid", True) or obj.get("type") == "floor":
+                continue
+            center = obj["position"]
+            half = [abs(v) * 0.5 for v in obj["scale"]]
+            if (abs(pos.x - center[0]) < half[0] + radius and
+                abs(pos.y - center[1]) < half[1] + radius and
+                pos.z < center[2] + half[2] + 0.5 and
+                pos.z + 1.0 > center[2] - half[2]):
+                return True
+        return False
 
     def interact(self):
         if not self.play_mode or self.dialogue_state:
             return
-        player_pos = self.camera.getPos(self.render)
+        if not self.player_node:
+            return
+        player_pos = self.player_node.getPos(self.render)
         candidates = []
         for obj in self.project["objects"]:
             if obj.get("type") == "npc":
@@ -489,7 +520,7 @@ class EngineApp(ShowBase):
         self._update_camera()
 
     def _update_camera(self):
-        target = Point3(0, 0, 0)
+        target = self.player_node.getPos(self.render) if self.play_mode and self.player_node else Point3(0, 0, 0)
         heading = math.radians(self.camera_heading)
         pitch = math.radians(self.camera_pitch)
         horizontal = self.camera_distance * math.cos(pitch)
@@ -514,12 +545,21 @@ class EngineApp(ShowBase):
                 self.camera_pitch = max(-75, min(-5, self.camera_pitch + (mouse.y - self.last_mouse[1]) * 100))
                 self._update_camera()
             self.last_mouse = (mouse.x, mouse.y)
-        if self.play_mode and not self.dialogue_state:
-            speed = 7 * dt
-            dx = (int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("d"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("a")))) * speed
-            dy = (int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("w"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("s")))) * speed
-            if dx or dy:
-                self.camera.setPos(self.camera, dx, dy, 0)
+        if self.play_mode and self.player_node and not self.dialogue_state:
+            speed = 6 * dt
+            forward = int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("w"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("s")))
+            strafe = int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("d"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("a")))
+            heading = math.radians(self.camera_heading)
+            dx = (math.sin(heading) * forward + math.cos(heading) * strafe) * speed
+            dy = (math.cos(heading) * forward - math.sin(heading) * strafe) * speed
+            current = self.player_node.getPos(self.render)
+            candidate = Point3(current.x + dx, current.y + dy, current.z)
+            if not self._player_blocked(Point3(candidate.x, current.y, current.z)):
+                current.x = candidate.x
+            if not self._player_blocked(Point3(current.x, candidate.y, current.z)):
+                current.y = candidate.y
+            self.player_node.setPos(self.render, current)
+            self._update_camera()
         return task.cont
 
     def _set_status(self, text):
