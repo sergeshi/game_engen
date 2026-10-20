@@ -3,17 +3,16 @@ setlocal
 cd /d "%~dp0"
 where py >nul 2>nul
 if %errorlevel%==0 (
-  start "GAME ENGEN local server" /D "%~dp0" cmd /k "py -m http.server 8000"
+  py main.py
 ) else (
   where python >nul 2>nul
   if %errorlevel%==0 (
-    start "GAME ENGEN local server" /D "%~dp0" cmd /k "python -m http.server 8000"
+    python main.py
   ) else (
-    echo Python was not found. Install Python 3 or run: npx http-server -p 8000
+    echo Python 3 was not found. Install Python 3.10 or newer.
     pause
     exit /b 1
   )
 )
-timeout /t 2 /nobreak >nul
-start "" http://127.0.0.1:8000/index.html
+if errorlevel 1 pause
 endlocal
