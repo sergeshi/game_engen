@@ -4,24 +4,25 @@ on:
   push:
     paths:
       - "python_prototype/**"
+      - "main.py"
+      - "requirements.txt"
       - ".github/workflows/python-prototype.yml"
   pull_request:
     paths:
       - "python_prototype/**"
+      - "main.py"
+      - "requirements.txt"
       - ".github/workflows/python-prototype.yml"
 
 jobs:
   core-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python_prototype
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Compile Python sources
-        run: python -m compileall -q .
+        run: python -m compileall -q main.py python_prototype
       - name: Test renderer-independent core
-        run: python -m unittest discover -s tests -v
+        run: python -m unittest discover -s python_prototype/tests -v
