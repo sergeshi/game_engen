@@ -13,7 +13,7 @@ from typing import Any
 from panda3d.core import (
     AmbientLight, BitMask32, CollisionHandlerQueue, CollisionNode,
     CollisionRay, CollisionTraverser, DirectionalLight, LineSegs,
-    Point3, Vec3, loadPrcFileData,
+    Point3, Vec3, KeyboardButton, loadPrcFileData,
 )
 from direct.gui.DirectGui import DirectButton, DirectFrame, DirectLabel
 from direct.showbase.ShowBase import ShowBase
@@ -287,7 +287,7 @@ class EngineApp(ShowBase):
         if not obj or self.play_mode:
             return
         self._commit_edit()
-        amount = 0.5 if self.mouseWatcherNode.isButtonDown("shift") else 0.2
+        amount = 0.5 if self.mouseWatcherNode.isButtonDown(KeyboardButton.shift()) else 0.2
         if self.move_mode == "move":
             for i, delta in enumerate((dx, dy, dz)):
                 obj["position"][i] += delta * amount
@@ -516,8 +516,8 @@ class EngineApp(ShowBase):
             self.last_mouse = (mouse.x, mouse.y)
         if self.play_mode and not self.dialogue_state:
             speed = 7 * dt
-            dx = (int(self.mouseWatcherNode.isButtonDown("d")) - int(self.mouseWatcherNode.isButtonDown("a"))) * speed
-            dy = (int(self.mouseWatcherNode.isButtonDown("w")) - int(self.mouseWatcherNode.isButtonDown("s"))) * speed
+            dx = (int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("d"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("a")))) * speed
+            dy = (int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("w"))) - int(self.mouseWatcherNode.isButtonDown(KeyboardButton.asciiKey("s")))) * speed
             if dx or dy:
                 self.camera.setPos(self.camera, dx, dy, 0)
         return task.cont
