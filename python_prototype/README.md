@@ -36,7 +36,7 @@ python main.py --renderer opengl
 python main.py --renderer vulkan
 ```
 
-OpenGL is the supported baseline. Vulkan selection asks Panda3D to load its `p3vk` display plugin. That plugin is not shipped by every Panda3D build; if it is absent, the application reports the problem rather than silently claiming to be running Vulkan. Install/build a Panda3D distribution with the Vulkan display module to use that backend. The editor/runtime systems are renderer-independent.
+OpenGL is the supported baseline. Vulkan selection asks Panda3D to load its experimental `p3vulkandisplay` module. It is not shipped by every Panda3D build and is not feature-equivalent to OpenGL; the backend remains experimental and may fail on ordinary editor features. If the module is absent, the application reports the startup failure rather than silently claiming Vulkan is active. OpenGL is the only supported baseline in this prototype.
 
 ## Controls
 
