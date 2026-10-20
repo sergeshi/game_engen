@@ -452,7 +452,7 @@ class EngineApp(ShowBase):
         start = dialogue.get("start")
         if start not in nodes:
             self._set_status("NPC dialogue is missing a valid start node"); return
-        self.dialogue_state = {"npc": npc, "nodes": nodes, "node": start}
+        self.dialogue_state = {"npc": npc, "nodes": nodes, "node": start, "journal_seen": []}
         self._show_dialogue_node()
 
     def _show_dialogue_node(self):
@@ -460,6 +460,10 @@ class EngineApp(ShowBase):
             button.destroy()
         self.dialogue_buttons = []
         node = self.dialogue_state["nodes"][self.dialogue_state["node"]]
+        journal_text = node.get("journal")
+        if journal_text and journal_text not in self.dialogue_state["journal_seen"]:
+            self.project.setdefault("journal", []).append(journal_text)
+            self.dialogue_state["journal_seen"].append(journal_text)
         self.dialogue_title["text"] = node.get("speaker", self.dialogue_state["npc"].get("name", "NPC"))
         self.dialogue_body["text"] = node.get("text", "")
         self.dialogue_frame.show()
