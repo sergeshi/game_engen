@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from engine.core import (
+from python_prototype.engine.core import (
     UndoHistory, aabb_intersects, apply_choice, atomic_save,
     default_project, load_project, validate_project,
 )
