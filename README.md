@@ -1,43 +1,65 @@
-# GAME ENGEN — Narrative RPG Studio
+# GAME ENGEN — Python 3D Editor / RPG Prototype
 
-Browser-first prototype for top-down 3D narrative RPGs inspired by dialogue-heavy isometric games.
+**The primary application on this branch is Python, not HTML.** The previous browser prototype is archived under `legacy_web/` and is not the app entry point.
 
-## Run
-Serve this folder with a local static server and open `index.html` in a modern browser. Three.js modules load from jsDelivr, so internet access is required on first run.
+## Quick start
 
-## Current editor prototype
-- Three.js 3D viewport, orbit camera, grid, shadow maps, hemisphere and directional light.
-- Blockout primitives: boxes, walls, floors, spheres, cylinders, stairs and capsule placeholders.
-- Scene hierarchy, object selection, transform gizmo, transform inspector, snapping, duplicate/delete and basic undo/redo.
-- Material library with base color, roughness, metalness and opacity controls.
-- Dynamic point/spot lights and environment controls.
-- Dialogue graph with draggable nodes, speaker/text, choices, links and dialogue play-test.
-- WASD/arrows movement and E interaction in the play-test.
-- JSON project export/import and GLB/glTF/OBJ model import.
-- SketchUp Ruby export helper/workflow.
+Requires Python 3.10+ and a desktop environment with graphics drivers.
 
-## New engine foundation modules
-- `engine/core.js`: serializable project normalization, scene/dialogue reference validation, dialogue condition/effect interpreter (skill checks, flags/variables and chance checks), dialogue history/journal snapshots, and axis-aligned collision helpers.
-- `tests/core.test.js`: Node test coverage for project validation, dialogue checks/effects/save restoration, and AABB collision helpers.
-- `package.json`: `npm test` and `npm run serve` scripts.
+```bash
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
 
-Run tests with Node.js 20+:
-```sh
-npm test
+pip install -r requirements.txt
+python main.py
 ```
 
-## Known limitations — do not mistake these for implemented features
-This is an early prototype, not a production engine. The core modules are being separated from the viewport incrementally; the existing HTML editor does not yet use every helper in `engine/core.js`. Full collision integration in the play mode, mouse-wired dialogue connectors, a complete skill/variable inspector, and automated end-to-end browser tests are still to be integrated.
+The root `main.py` launches `python_prototype/main.py`.
 
-Static lightmap baking, UV generation and painting, robust physics, navmesh/pathfinding, full scripting/debugging, native SKP parsing and packaged standalone builds are not implemented yet. Browser model import supports GLB/glTF and OBJ. Native SketchUp files must be exported to an interchange format first. The current SketchUp helper relies on formats available in the installed SketchUp version; it is not a native SKP importer or a fully bidirectional live link.
+## Renderer
 
-## Roadmap
-1. Stabilize scene serialization, geometry/material round-tripping, selection, transform editing and undo/redo.
-2. Integrate dialogue graph connectors, validation panel, skills, variables, probability checks, journal and branch debugger.
-3. Build an isolated top-down runtime with capsule movement, collision, interactables, triggers and save/load.
-4. Add texture slots and UV controls, then realtime lighting quality settings and a real static-light baking pipeline.
-5. Improve asset import and resource relinking; build a SketchUp bridge that can reliably re-export changed models.
-6. Add project validation, runtime packaging and standalone game builds.
+```bash
+python main.py --renderer opengl
+python main.py --renderer vulkan
+```
 
-## Architecture direction
-Keep scene objects, materials, lights, dialogue graphs and runtime state serializable and independent from Three.js viewport objects. This supports testing and gradual migration of performance-critical runtime systems to C# while keeping HTML-based editor tooling where useful.
+OpenGL is the baseline. Vulkan is experimental and attempts to load Panda3D's `p3vulkandisplay` module. That module is not included in every Panda3D build; Vulkan support is not claimed as validated or feature-equivalent until tested on a build with the module and a real GPU.
+
+## Implemented prototype features
+
+- Lightweight Panda3D 3D viewport with grid and lighting.
+- Object hierarchy, viewport picking, move/rotate/scale modes, duplicate/delete.
+- Undo/redo and JSON scene save/load with validation and atomic writes.
+- Play mode, simple player movement and blockout collision.
+- NPC interaction, branching dialogue, variables and journal entries.
+- Unit tests for renderer-independent core and GitHub Actions compile/test workflow.
+
+## Tests
+
+```bash
+python -m unittest discover -s python_prototype/tests -v
+```
+
+CI runs source compilation and core unit tests. The GUI and graphics backend still require interactive testing on a real desktop.
+
+## Project structure
+
+```text
+main.py                       # primary launcher
+requirements.txt              # Python dependencies
+python_prototype/
+  main.py                     # editor/runtime
+  engine/core.py              # validation, persistence, dialogue primitives, undo
+  tests/test_core.py
+  ROADMAP.md
+legacy_web/index.html         # archived browser prototype; not the primary app
+```
+
+## Scope
+
+This is a working foundation/prototype, not yet a production-ready engine. The next roadmap steps are numeric inspector fields and transform gizmos, robust scene hierarchy and asset pipeline, character controller with gravity/jump, one shared dialogue schema, visual dialogue graph, quests/inventory, and a tested renderer abstraction with OpenGL/Vulkan parity.
+
+See [Python prototype README](python_prototype/README.md) and [improvement roadmap](python_prototype/ROADMAP.md).
