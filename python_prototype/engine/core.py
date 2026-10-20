@@ -69,8 +69,6 @@ def load_project(path: str | Path) -> dict[str, Any]:
 def apply_choice(project: dict[str, Any], node: dict[str, Any], choice: dict[str, Any]) -> str | None:
     """Apply dialogue effects and journal entry; return next node id if any."""
     project.setdefault("variables", {}).update(choice.get("effects", {}))
-    if node.get("journal"):
-        project.setdefault("journal", []).append(node["journal"])
     return choice.get("next")
 
 
