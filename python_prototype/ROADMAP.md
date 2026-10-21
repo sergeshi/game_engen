@@ -121,7 +121,8 @@ The current code intentionally implements only a small vertical slice. The Vulka
 
 - [x] Add a dedicated Widget Studio canvas in the Widgets tab, replacing the 3D viewport while designing.
 - [x] Add live preview targets for interaction prompt, dialogue panel, speaker name, dialogue text, response buttons and portrait.
-- [x] Add editable colors, typography, font weight, padding, corner radius, border, opacity, shadow, width and screen position where applicable.
+- [x] Add editable colors, typography, font weight, padding, corner radius, border, opacity, shadow, width, screen position and numeric offsets where applicable.
+- [x] Support drag-to-position for the main prompt/dialogue panel in the preview, with saved X/Y offsets.
 - [x] Add Classic amber, Minimal dark and Soft light presets, element reset, and JSON style import/export.
 - [x] Persist widget style settings in project JSON and merge defaults when loading older projects.
 - [x] Apply styles to the actual in-game interaction prompt and dialogue panel/components.
