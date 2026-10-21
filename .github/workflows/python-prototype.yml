@@ -5,6 +5,9 @@ on:
     paths:
       - "python_prototype/**"
       - "legacy_web/**"
+      - "legacy_web/app.js"
+      - "legacy_web/state.js"
+      - "legacy_web/styles.css"
       - "desktop.py"
       - "main.py"
       - "requirements.txt"
