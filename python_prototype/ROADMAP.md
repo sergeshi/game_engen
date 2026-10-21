@@ -115,3 +115,15 @@ The current code intentionally implements only a small vertical slice. The Vulka
 - Added static regression tests for picker wiring, transparent-surface behavior, tab-to-mode wiring and viewport resizing.
 - Extended the renderer-independent core with a `SceneDocument`, hierarchy validation, duplicate/delete operations, dialogue-link validation, journal effects and safe project-relative asset resolution.
 - These are foundation improvements, not full completion of the requested roadmap. The embedded editor still uses Three.js/WebGL; the native Python UI and renderer migration, complete end-to-end editor validation, material/light parity, importer validation, debugger and packaged builds remain open.
+
+
+## Widget visual designer update (2026-10-21)
+
+- [x] Add a dedicated Widget Studio canvas in the Widgets tab, replacing the 3D viewport while designing.
+- [x] Add live preview targets for interaction prompt, dialogue panel, speaker name, dialogue text, response buttons and portrait.
+- [x] Add editable colors, typography, font weight, padding, corner radius, border, opacity, shadow, width and screen position where applicable.
+- [x] Add Classic amber, Minimal dark and Soft light presets, element reset, and JSON style import/export.
+- [x] Persist widget style settings in project JSON and merge defaults when loading older projects.
+- [x] Apply styles to the actual in-game interaction prompt and dialogue panel/components.
+- [ ] Run a full interactive GUI pass for resizing, different resolutions, portrait/no-portrait cases, long text, and imported legacy projects.
+- [ ] Extend to freeform element layout, drag-to-position, custom image assets, button states/animations, responsive anchors and theme tokens.
