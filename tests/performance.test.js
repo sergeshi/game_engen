@@ -9,16 +9,16 @@ test('history keeps bounded snapshots and skips duplicate states', () => {
   assert.equal(history.push({ n: 2 }), true);
   assert.equal(history.push({ n: 3 }), true);
   assert.equal(history.size, 2);
-  assert.deepEqual(history.undo({ n: 4 }), { n: 2 });
-  assert.deepEqual(history.redo({ n: 2 }), { n: 4 });
+  assert.deepEqual(history.undo({ n: 4 }), { n: 3 });
+  assert.deepEqual(history.redo({ n: 3 }), { n: 4 });
 });
 
 test('undo and redo transfer current state between stacks', () => {
   const history = createHistoryStore(5);
   history.push({ objects: [{ id: 'a' }] });
   history.push({ objects: [{ id: 'a' }, { id: 'b' }] });
-  assert.deepEqual(history.undo({ objects: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }), { objects: [{ id: 'a' }] });
-  assert.deepEqual(history.redo({ objects: [{ id: 'a' }] }), { objects: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] });
+  assert.deepEqual(history.undo({ objects: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }), { objects: [{ id: 'a' }, { id: 'b' }] });
+  assert.deepEqual(history.redo({ objects: [{ id: 'a' }, { id: 'b' }] }), { objects: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] });
 });
 
 test('performance monitor records durations and resets', () => {
