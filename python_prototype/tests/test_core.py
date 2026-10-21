@@ -52,6 +52,12 @@ class ProjectTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing parent"):
             validate_project(project)
 
+    def test_invalid_parent_type_rejected(self):
+        project = self.sample()
+        project["objects"][0]["parent_id"] = ["not", "an", "id"]
+        with self.assertRaisesRegex(ValueError, "invalid parent_id"):
+            validate_project(project)
+
     def test_parent_cycle_rejected(self):
         project = self.sample()
         child = dict(project["objects"][0], id="child", parent_id="box")
@@ -94,6 +100,12 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(duplicate["position"], [2.5, 0, 0])
         self.assertEqual(scene.delete("box"), ["box"])
         self.assertEqual([o["id"] for o in scene.objects], [duplicate["id"]])
+
+    def test_failed_transform_is_rolled_back(self):
+        scene = SceneDocument(self.sample())
+        with self.assertRaisesRegex(ValueError, "zero scale"):
+            scene.set_transform("box", scale=[1, 0, 1])
+        self.assertEqual(scene.object("box")["scale"], [1, 1, 1])
 
     def test_reparent_rejects_cycles_and_rolls_back(self):
         project = self.sample()
