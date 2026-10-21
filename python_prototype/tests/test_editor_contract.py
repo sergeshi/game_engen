@@ -69,5 +69,13 @@ class EditorContractTests(unittest.TestCase):
         self.assertIn("$('#viewport').classList.toggle('hidden',mode==='dialogue'||mode==='widgets')", self.html)
         self.assertIn("$('#widgetDesigner').classList.toggle('hidden',mode!=='widgets')", self.html)
 
+    def test_widget_preview_supports_drag_and_numeric_offsets(self):
+        self.assertIn("function beginWidgetPreviewDrag(e,target)", self.html)
+        self.assertIn("Horizontal offset (px)", self.html)
+        self.assertIn("Vertical offset (px)", self.html)
+        self.assertIn("st.offsetX", self.html)
+        self.assertIn("st.offsetY", self.html)
+        self.assertIn("widgetPreviewDragInstalled", self.html)
+
 if __name__ == "__main__":
     unittest.main()
