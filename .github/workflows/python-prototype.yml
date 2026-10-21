@@ -38,5 +38,9 @@ jobs:
       - run: node --check /tmp/game-engen-editor.mjs
       - name: Check dialogue graph module syntax
         run: cp legacy_web/dialogue_system.js /tmp/dialogue_system.mjs && node --check /tmp/dialogue_system.mjs
-      - name: Test renderer-independent core
+      - name: Check performance utilities syntax
+        run: cp legacy_web/performance_tools.js /tmp/performance_tools.mjs && node --check /tmp/performance_tools.mjs
+      - name: Run JavaScript regression tests
+        run: npm test
+      - name: Test renderer-independent Python core
         run: python -m unittest discover -s python_prototype/tests -v
