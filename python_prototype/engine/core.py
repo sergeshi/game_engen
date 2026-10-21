@@ -68,6 +68,8 @@ def validate_project(data: Any) -> dict[str, Any]:
     # or serializer can accidentally create an infinite traversal.
     for obj in by_id.values():
         parent_id = obj.get("parent_id")
+        if parent_id is not None and (not isinstance(parent_id, str) or not parent_id):
+            raise ValueError(f"Object {obj['id']} has an invalid parent_id.")
         if parent_id is not None and parent_id not in by_id:
             raise ValueError(f"Object {obj['id']} references missing parent {parent_id}.")
         if parent_id == obj["id"]:
@@ -139,7 +141,7 @@ def dialogue_graph_issues(dialogue: Any) -> list[str]:
                 issues.append(f"Node {node_id!r} choice {index} must be an object.")
                 continue
             target = choice.get("next")
-            if target not in (None, "") and target not in nodes:
+            if target not in (None, "") and (not isinstance(target, str) or target not in nodes):
                 issues.append(f"Node {node_id!r} choice {index} links to missing node {target!r}.")
     return issues
 
@@ -205,16 +207,27 @@ class SceneDocument:
             "components": [],
         }
         obj.update(_clone(fields))
+        before = len(self.objects)
         self.objects.append(obj)
-        validate_project(self.data)
+        try:
+            validate_project(self.data)
+        except Exception:
+            del self.objects[before:]
+            raise
         return obj
 
     def set_transform(self, object_id: str, *, position=None, rotation=None, scale=None) -> None:
         obj = self.object(object_id)
+        before = _clone(obj)
         for key, value in (("position", position), ("rotation", rotation), ("scale", scale)):
             if value is not None:
                 obj[key] = list(value)
-        validate_project(self.data)
+        try:
+            validate_project(self.data)
+        except Exception:
+            obj.clear()
+            obj.update(before)
+            raise
 
     def reparent(self, object_id: str, parent_id: str | None) -> None:
         obj = self.object(object_id)
@@ -244,6 +257,11 @@ class SceneDocument:
         for component in duplicate.get("components", []):
             component["id"] = str(uuid.uuid4())
         self.objects.append(duplicate)
+        try:
+            validate_project(self.data)
+        except Exception:
+            self.objects.remove(duplicate)
+            raise
         return duplicate
 
     def delete(self, object_id: str) -> list[str]:
