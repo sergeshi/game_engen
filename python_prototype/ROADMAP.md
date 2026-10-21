@@ -7,15 +7,20 @@ This roadmap separates a reliable vertical slice from features that should only 
 - [x] Create an isolated Python prototype branch; leave the browser branch unchanged.
 - [x] Add a runnable application entry point and dependency manifest.
 - [x] Add standard-library tests for scene validation, JSON round-trip, dialogue effects, AABB checks and undo/redo.
+- [x] Add static regression checks for viewport click wiring, transparent-surface picking, tab switching and resize observers.
 - [ ] Add CI on Windows/Linux, linting, type checking and a smoke-start test with a virtual display.
 
 **Exit criteria:** clean install, repeatable launch, all tests green.
 
 ## Phase 1 — Scene/document model
 
-- Use a versioned scene schema with stable UUIDs, explicit component types and migrations.
-- Add a transactional command system for every editor mutation.
-- Make save/load atomic; report schema and asset errors without corrupting the open document.
+- [x] Add renderer-independent SceneDocument operations for create, transform, duplicate, reparent and subtree delete.
+- [x] Validate unique object/component IDs, transform values, parent references and hierarchy cycles.
+- [x] Make JSON save atomic; preserve component data and unknown extension fields in round-trip tests.
+- [x] Validate dialogue start nodes and links; report missing asset files and reject paths escaping the project root.
+- [ ] Integrate SceneDocument as the sole source of truth across viewport, hierarchy, inspector and persistence.
+- [ ] Add a transactional command system for every editor mutation and schema migrations.
+- [ ] Add autosave, recovery files, dirty-state indication and project settings.
 - Add autosave, recovery files, dirty-state indication and project settings.
 - Test round-trip preservation for every supported field.
 
@@ -44,7 +49,9 @@ This roadmap separates a reliable vertical slice from features that should only 
 ## Phase 4 — Narrative/RPG systems
 
 - One dialogue schema and one runtime interpreter shared by editor preview and game mode.
-- Visual node graph with validation for missing links, unreachable nodes and invalid expressions.
+- [x] Add renderer-independent validation for missing dialogue start nodes and broken choice links.
+- [x] Apply dialogue choice effects and deduplicated journal entries in the shared core primitives.
+- [ ] Wire the shared validator/interpreter into both the visual node graph and game runtime.
 - Typed variables, conditions, effects, quest states, journal, inventory, skill checks and dialogue portraits.
 - Save/load of runtime state with schema versioning and migration.
 - NPC/trigger bindings through stable entity IDs, never hard-coded scene references.
@@ -100,3 +107,11 @@ python_prototype/
 ```
 
 The current code intentionally implements only a small vertical slice. The Vulkan switch is a guarded attempt to load Panda3D's experimental `p3vulkandisplay` module; Vulkan is **not** considered validated until tested with a build that includes that module and a real GPU/driver, and the backend is not assumed to have OpenGL feature parity. A production dual-backend renderer needs a dedicated backend implementation and parity tests.
+
+
+## Work completed in python-prototype-foundation (2026-10-21)
+
+- Viewport picking now ignores non-primary clicks, climbs child-mesh hits to the owning scene object, and can pass through translucent materials unless the object explicitly sets `userData.pickThrough = false`. The click handler remains wired to the viewport.
+- Added static regression tests for picker wiring, transparent-surface behavior, tab-to-mode wiring and viewport resizing.
+- Extended the renderer-independent core with a `SceneDocument`, hierarchy validation, duplicate/delete operations, dialogue-link validation, journal effects and safe project-relative asset resolution.
+- These are foundation improvements, not full completion of the requested roadmap. The embedded editor still uses Three.js/WebGL; the native Python UI and renderer migration, complete end-to-end editor validation, material/light parity, importer validation, debugger and packaged builds remain open.
