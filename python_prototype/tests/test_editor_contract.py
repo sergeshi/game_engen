@@ -65,9 +65,12 @@ class EditorContractTests(unittest.TestCase):
         self.assertIn("speakerStyle=widgetStyle('speaker')", self.html)
         self.assertIn("choiceStyle=widgetStyle('choice')", self.html)
 
-    def test_widgets_mode_displays_design_studio_instead_of_scene_canvas(self):
-        self.assertIn("$('#viewport').classList.toggle('hidden',mode==='dialogue'||mode==='widgets')", self.html)
-        self.assertIn("$('#widgetDesigner').classList.toggle('hidden',mode!=='widgets')", self.html)
+    def test_widget_design_mode_is_separate_from_interaction_binding_mode(self):
+        self.assertIn("$('#viewport').classList.toggle('hidden',mode==='dialogue'||designer)", self.html)
+        self.assertIn("$('#widgetDesigner').classList.toggle('hidden',!designer)", self.html)
+        self.assertIn("const designer=mode==='widgetDesign'", self.html)
+        self.assertIn("$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode))", self.html)
+
 
     def test_widget_preview_supports_drag_and_numeric_offsets(self):
         self.assertIn("function beginWidgetPreviewDrag(e,target)", self.html)
