@@ -33,9 +33,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Check embedded editor JavaScript syntax
-        run: python -c "import re,pathlib; s=pathlib.Path('legacy_web/index.html').read_text(encoding='utf-8'); m=re.search(r'<script type=\"module\">(.*?)</script>', s, re.S); assert m, 'module script not found'; pathlib.Path('/tmp/game-engen-editor.mjs').write_text(m.group(1), encoding='utf-8')"
-      - run: node --check /tmp/game-engen-editor.mjs
+      - name: Check modular editor JavaScript syntax
+        run: node --check legacy_web/app.js && node --check legacy_web/state.js
       - name: Check dialogue graph module syntax
         run: cp legacy_web/dialogue_system.js /tmp/dialogue_system.mjs && node --check /tmp/dialogue_system.mjs
       - name: Check performance utilities syntax
