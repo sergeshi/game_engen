@@ -44,5 +44,30 @@ class EditorContractTests(unittest.TestCase):
         self.assertIn("camera.updateProjectionMatrix()", self.html)
 
 
+    def test_widget_visual_designer_has_live_preview_and_component_targets(self):
+        self.assertIn('id="widgetDesigner"', self.html)
+        self.assertIn("function renderWidgetDesigner()", self.html)
+        self.assertIn("function widgetInspector()", self.html)
+        for target in ("prompt", "dialogPanel", "speaker", "dialogText", "choice", "portrait"):
+            self.assertIn(target, self.html)
+        self.assertIn("updateWidgetDesignerPreview()", self.html)
+
+    def test_widget_styles_are_saved_and_restored(self):
+        self.assertIn("widgetStyles:S.widgetStyles", self.html)
+        self.assertIn("S.widgetStyles=d.widgetStyles||{}", self.html)
+        self.assertIn("function ensureWidgetStyles()", self.html)
+        self.assertIn("Export style", self.html)
+        self.assertIn("Import style", self.html)
+
+    def test_visual_styles_apply_to_runtime_widgets(self):
+        self.assertIn("const st=widgetStyle('prompt')", self.html)
+        self.assertIn("panelStyle=widgetStyle('dialogPanel')", self.html)
+        self.assertIn("speakerStyle=widgetStyle('speaker')", self.html)
+        self.assertIn("choiceStyle=widgetStyle('choice')", self.html)
+
+    def test_widgets_mode_displays_design_studio_instead_of_scene_canvas(self):
+        self.assertIn("$('#viewport').classList.toggle('hidden',mode==='dialogue'||mode==='widgets')", self.html)
+        self.assertIn("$('#widgetDesigner').classList.toggle('hidden',mode!=='widgets')", self.html)
+
 if __name__ == "__main__":
     unittest.main()
