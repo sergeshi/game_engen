@@ -1,0 +1,40 @@
+name: Python prototype checks
+
+on:
+  push:
+    paths:
+      - "python_prototype/**"
+      - "legacy_web/**"
+      - "desktop.py"
+      - "main.py"
+      - "requirements.txt"
+      - "RUN_GAME_ENGEN.bat"
+      - ".github/workflows/python-prototype.yml"
+  pull_request:
+    paths:
+      - "python_prototype/**"
+      - "legacy_web/**"
+      - "desktop.py"
+      - "main.py"
+      - "requirements.txt"
+      - "RUN_GAME_ENGEN.bat"
+      - ".github/workflows/python-prototype.yml"
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Python sources
+        run: python -m compileall -q main.py desktop.py python_prototype
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check embedded editor JavaScript syntax
+        run: python -c "import re,pathlib; s=pathlib.Path('legacy_web/index.html').read_text(encoding='utf-8'); m=re.search(r'<script type=\"module\">(.*?)</script>', s, re.S); assert m, 'module script not found'; pathlib.Path('/tmp/game-engen-editor.mjs').write_text(m.group(1), encoding='utf-8')"
+      - run: node --check /tmp/game-engen-editor.mjs
+      - name: Test renderer-independent core
+        run: python -m unittest discover -s python_prototype/tests -v

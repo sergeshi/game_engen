@@ -1,43 +1,54 @@
 # GAME ENGEN — Narrative RPG Studio
 
-Browser-first prototype for top-down 3D narrative RPGs inspired by dialogue-heavy isometric games.
+This branch now launches the **original editor UI in a native Python desktop window** instead of launching the reduced Panda3D demo. The existing editor panels, scene tools, material/lighting controls, dialogue graph, play-test, model import and JSON project workflow remain in the bundled editor UI.
 
-## Run
-Serve this folder with a local static server and open `index.html` in a modern browser. Three.js modules load from jsDelivr, so internet access is required on first run.
+## Quick start (Windows)
 
-## Current editor prototype
-- Three.js 3D viewport, orbit camera, grid, shadow maps, hemisphere and directional light.
-- Blockout primitives: boxes, walls, floors, spheres, cylinders, stairs and capsule placeholders.
-- Scene hierarchy, object selection, transform gizmo, transform inspector, snapping, duplicate/delete and basic undo/redo.
-- Material library with base color, roughness, metalness and opacity controls.
-- Dynamic point/spot lights and environment controls.
-- Dialogue graph with draggable nodes, speaker/text, choices, links and dialogue play-test.
-- WASD/arrows movement and E interaction in the play-test.
-- JSON project export/import and GLB/glTF/OBJ model import.
-- SketchUp Ruby export helper/workflow.
+1. Install Python 3.10 or newer.
+2. From the repository folder run:
 
-## New engine foundation modules
-- `engine/core.js`: serializable project normalization, scene/dialogue reference validation, dialogue condition/effect interpreter (skill checks, flags/variables and chance checks), dialogue history/journal snapshots, and axis-aligned collision helpers.
-- `tests/core.test.js`: Node test coverage for project validation, dialogue checks/effects/save restoration, and AABB collision helpers.
-- `package.json`: `npm test` and `npm run serve` scripts.
-
-Run tests with Node.js 20+:
-```sh
-npm test
+```bat
+pip install -r requirements.txt
+python main.py
 ```
 
-## Known limitations — do not mistake these for implemented features
-This is an early prototype, not a production engine. The core modules are being separated from the viewport incrementally; the existing HTML editor does not yet use every helper in `engine/core.js`. Full collision integration in the play mode, mouse-wired dialogue connectors, a complete skill/variable inspector, and automated end-to-end browser tests are still to be integrated.
+Or double-click `RUN_GAME_ENGEN.bat`.
 
-Static lightmap baking, UV generation and painting, robust physics, navmesh/pathfinding, full scripting/debugging, native SKP parsing and packaged standalone builds are not implemented yet. Browser model import supports GLB/glTF and OBJ. Native SketchUp files must be exported to an interchange format first. The current SketchUp helper relies on formats available in the installed SketchUp version; it is not a native SKP importer or a fully bidirectional live link.
+## What this build is — and is not
 
-## Roadmap
-1. Stabilize scene serialization, geometry/material round-tripping, selection, transform editing and undo/redo.
-2. Integrate dialogue graph connectors, validation panel, skills, variables, probability checks, journal and branch debugger.
-3. Build an isolated top-down runtime with capsule movement, collision, interactables, triggers and save/load.
-4. Add texture slots and UV controls, then realtime lighting quality settings and a real static-light baking pipeline.
-5. Improve asset import and resource relinking; build a SketchUp bridge that can reliably re-export changed models.
-6. Add project validation, runtime packaging and standalone game builds.
+- `main.py` starts `desktop.py`, a Python/PySide6 desktop host.
+- The host embeds `legacy_web/index.html` using Qt WebEngine. The original Three.js UI is intentionally preserved so this version does not lose the features and layout already present in `feature/narrative-rpg-foundation`.
+- The 3D viewport currently uses the original Three.js/WebGL renderer. This is a compatibility bridge, **not yet a complete native Python/OpenGL/Vulkan renderer**. Vulkan parity is not claimed.
+- `python_prototype/main.py` remains available as an isolated Panda3D engine experiment, but it is not the primary launcher because it does not yet match the original editor's feature set.
+- The UI imports Three.js modules from jsDelivr, so first launch needs internet access. Project JSON exports are saved to the app's `downloads/` directory when initiated by the embedded browser.
 
-## Architecture direction
-Keep scene objects, materials, lights, dialogue graphs and runtime state serializable and independent from Three.js viewport objects. This supports testing and gradual migration of performance-critical runtime systems to C# while keeping HTML-based editor tooling where useful.
+## Features preserved from the original editor
+
+- Three-dimensional viewport, orbit camera, grid, shadows, ambient/directional lighting and post-processing controls.
+- Blockout primitives, hierarchy, selection, transform gizmo, numeric transform inspector, snapping, duplicate/delete, undo/redo.
+- Materials with color, roughness, metalness, opacity and glow controls.
+- Point/spot lights and global environment settings.
+- Dialogue graph with nodes, speakers, text, choices, links and play-test.
+- WASD/arrows movement and interaction in play-test.
+- JSON project export/import and GLB/glTF/OBJ model import.
+- SketchUp Ruby export helper/workflow and custom dialogue-widget styling controls.
+
+The original project documents additional limitations honestly: lightmap baking, robust physics/navmesh, complete scripting/debugging, native SKP parsing and packaged standalone game builds are not implemented yet.
+
+## Python engine prototype and tests
+
+The separate `python_prototype/` directory contains an early native Panda3D experiment and renderer-independent core tests. Run:
+
+```sh
+python -m unittest discover -s python_prototype/tests -v
+python python_prototype/main.py --renderer opengl
+```
+
+Panda3D's Vulkan display plugin is experimental and may not be present in the installed build. No Vulkan support is claimed until it has been tested on a real machine.
+
+## Next migration stages
+
+1. Preserve UI behavior with regression tests and document every original control/action.
+2. Port project/scene/material/light/dialogue data models and persistence to Python without changing the user-facing workflow.
+3. Replace the embedded Three.js viewport with a native Python renderer behind the same editor layout; validate picking, transforms, materials, lighting, imported assets and play mode before removing the compatibility bridge.
+4. Validate OpenGL first, then Vulkan as a separately tested backend. Do not remove a working original feature until its Python replacement passes the same acceptance tests.

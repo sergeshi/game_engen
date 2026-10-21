@@ -1,0 +1,5 @@
+"""Primary GAME ENGEN desktop launcher."""
+from desktop import main
+
+if __name__ == "__main__":
+    main()
