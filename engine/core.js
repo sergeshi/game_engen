@@ -72,7 +72,7 @@ export function validateProject(project) {
 }
 
 const IDENT = '[a-zA-Z_$][\\w.$]*';
-const VALUE = '(?:true|false|null|-?\\d+(?:\\.\\d+)?|"(?:[^"\\\\]|\\.)*"|\\'(?:[^\\'\\\\]|\\.)*\\')';
+const VALUE = String.raw`(?:true|false|null|-?\d+(?:\.\d+)?|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')`;
 export function isSupportedExpression(expression, assignment = false) {
   const s = String(expression || '').trim();
   if (!s) return true;
